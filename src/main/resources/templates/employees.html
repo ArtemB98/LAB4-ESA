@@ -1,0 +1,175 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Работники</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-resource@1.5.1"></script>
+</head>
+<body>
+<div class="header">
+    <div class="header-link">
+        <a href="/xml/employees">XML</a>
+    </div>
+    <div class="header-link current-link">
+        <a href="employees.html" >Работники</a>
+    </div>
+    <div class="header-link">
+        <a href="departments.html">Департаменты</a>
+    </div>
+</div>
+<div id="content">
+    <div class="table-wrapper">
+        <table>
+            <thead>
+            <tr>
+                <td class="id-column">Id</td>
+                <td>Имя</td>
+                <td>Зарплата</td>
+                <td>E-mail</td>
+                <td>Название департамента</td>
+                <td class="delete-button">Удаление</td>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="employee in employeeList">
+                <td>{{employee.id}}</td>
+                <td>{{employee.name}}</td>
+                <td>{{employee.salary}}</td>
+                <td>{{employee.email}}</td>
+                <td>{{employee.departmentByDepartmentId}}</td>
+                <td class="delete-button">
+                    <img class="del-img" src="/static/delete_button.png" width="16px" height="16px" @click="deleteEmployee(employee)">
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="creation">
+        <div class="creation-form">
+            <div class="input-form">
+                <label for="name">Имя</label>
+                <input id="name" type="text" v-model="name">
+            </div>
+            <div class="input-form">
+                <label for="salary">Зарплата</label>
+                <input id="salary" type="text" v-model="salary">
+            </div>
+            <div class="input-form">
+                <label for="email">E-mail</label>
+                <input id="email" type="email" v-model="email">
+            </div>
+            <div class="input-form">
+                <label for="department">Department</label>
+                <input id="department" type="text" v-model="department">
+            </div>
+            <div class="input-form">
+                <button style="margin: auto" @click="addEmployee">Добавить Работника</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    var SERVER_ERROR_MESSAGE = "Server error";
+    var vue = new Vue({
+        el: "#content",
+        data:{
+            addApi: Vue.resource('../add/department'),
+            deleteApi: Vue.resource('../delete/department'),
+            departmentListApi: Vue.resource('../departments'),
+            employeeListApi: Vue.resource('../employees'),
+            selectedEmployees: "",
+            departmentList: [],
+            name: "",
+            salary: "",
+            departments: []
+        },
+        methods:{
+            addEmployee: function () {
+                if (this.name === "" || this.salary === "" || this.departments === ""){
+                    alert("Fill name, salary, department);
+                    return;
+                }
+                this.addApi
+                    .get({name: this.name, salary: this.salary, departmentId: this.departmentId})
+                    .then(
+                        response => {
+                            if (response.status !== 200) {
+                                alert(SERVER_ERROR_MESSAGE);
+                                return;
+                            }
+                            let serverResponse = response.body;
+                            if (serverResponse.success === true) {
+                                let department = serverResponse.message;
+                                this.departmentList.push(department);
+                            }else{
+                                alert(serverResponse.message)
+                            }
+                        },
+                        errorResponse => {
+                            alert(SERVER_ERROR_MESSAGE);
+                        },
+                    );
+            },
+            deleteEmployee: function (employee) {
+                this.deleteApi
+                    .get({id: employee.id})
+                    .then(
+                        response => {
+                            if (response.status !== 200) {
+                                alert(SERVER_ERROR_MESSAGE);
+                                return;
+                            }
+                            let serverResponse = response.body;
+                            if (serverResponse.success === false) {
+                                alert(serverResponse.message)
+                            }else {
+                                let index = this.employeeList.indexOf(employee);
+                                this.employeeList.splice(index, 1);
+                            }
+                        },
+                        errorResponse => {
+                            alert(SERVER_ERROR_MESSAGE);
+                        },
+                    );
+            }
+
+        },
+        beforeMount: function () {
+            this.employeeListApi
+                .get()
+                .then(
+                    response => {
+                        console.log(response);
+                        if (response.status !== 200) {
+                            alert(SERVER_ERROR_MESSAGE);
+                            return;
+                        }
+                        this.employeeList = response.body;
+                    },
+                    errorResponse => {
+                        alert(SERVER_ERROR_MESSAGE);
+                    },
+                );
+            this.departmentListApi
+                .get()
+                .then(
+                    response => {
+                        console.log(response);
+                        if (response.status !== 200) {
+                            alert(SERVER_ERROR_MESSAGE);
+                            return;
+                        }
+                        this.departments = response.body;
+                    },
+                    errorResponse => {
+                        alert(SERVER_ERROR_MESSAGE);
+                    },
+                );
+        }
+    });
+
+</script>
+</body>
+</html>
